@@ -43,17 +43,48 @@ class DataLoader:
         """
         print(f"Fetching data for {tickers} from {self.start_date} to {self.end_date}...")
         
-        data = yf.download(tickers, start=self.start_date, end=self.end_date, 
-                          progress=False)
-        
-        # Handle single ticker case
-        if isinstance(data.columns, pd.RangeIndex):
-            data = data[['Adj Close']]
-            data.columns = [tickers[0] if isinstance(tickers, list) else tickers]
+        normalized_tickers = tickers if isinstance(tickers, list) else [tickers]
+        data = yf.download(
+            normalized_tickers,
+            start=self.start_date,
+            end=self.end_date,
+            progress=False,
+        )
+
+        if data.empty:
+            raise ValueError("No price data returned for the provided tickers and date range")
+
+        # yfinance can return either "Adj Close" or "Close" depending on settings/version.
+        preferred_price_field = "Adj Close"
+        fallback_price_field = "Close"
+
+        if isinstance(data.columns, pd.MultiIndex):
+            top_level_fields = set(data.columns.get_level_values(0))
+            if preferred_price_field in top_level_fields:
+                prices = data[preferred_price_field]
+            elif fallback_price_field in top_level_fields:
+                prices = data[fallback_price_field]
+            else:
+                raise ValueError(
+                    "Could not find price field in downloaded data; expected 'Adj Close' or 'Close'"
+                )
         else:
-            data = data['Adj Close']
-        
-        return data
+            if preferred_price_field in data.columns:
+                prices = data[[preferred_price_field]].copy()
+            elif fallback_price_field in data.columns:
+                prices = data[[fallback_price_field]].copy()
+            else:
+                raise ValueError(
+                    "Could not find price field in downloaded data; expected 'Adj Close' or 'Close'"
+                )
+
+            # For single ticker downloads, normalize to ticker-named column.
+            prices.columns = [normalized_tickers[0]]
+
+        if isinstance(prices, pd.Series):
+            prices = prices.to_frame(name=normalized_tickers[0])
+
+        return prices
     
     def get_returns(self, prices, method='simple'):
         """
