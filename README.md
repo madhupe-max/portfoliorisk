@@ -2,6 +2,8 @@
 
 A Python package for analyzing and quantifying risk in equity portfolios. This tool provides comprehensive risk metrics, correlation analysis, and portfolio optimization capabilities.
 
+It now also includes a LangGraph-based agent workflow that orchestrates the existing analysis modules and returns a structured JSON risk report.
+
 ## Features
 
 - **Data Management**: Automatic fetching of historical stock price data from Yahoo Finance
@@ -80,10 +82,100 @@ concentration = analyzer.get_concentration_report(portfolio.weights)
 print(f"Effective Number of Bets: {concentration['Effective Number of Bets']:.2f}")
 ```
 
+### LangGraph Agent Demo
+
+Run the agent with the existing sample portfolio (AAPL, MSFT, GOOGL, AMZN, TSLA):
+
+```bash
+python examples/run_langgraph_agent.py --portfolio-file examples/sample_portfolio.json
+```
+
+Run with default built-in portfolio (same existing sample portfolio):
+
+```bash
+python examples/run_langgraph_agent.py
+```
+
+Run with custom options and save output:
+
+```bash
+python examples/run_langgraph_agent.py \
+  --portfolio-file examples/sample_portfolio.json \
+  --start-date 2024-01-01 \
+  --end-date 2025-12-31 \
+  --returns-method simple \
+  --risk-free-rate 0.03 \
+  --output-file outputs/agent_report.json
+```
+
+The agent output includes:
+1. `portfolio` summary metrics
+2. `risk` metrics (VaR, CVaR, Sharpe, Sortino, Drawdown, Calmar)
+3. `correlation` and concentration analysis
+4. `narrative` interpretation for quick review
+
+### FastAPI HTTP Demo
+
+Start the API server:
+
+```bash
+uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Run the API in Docker (build + run in one command):
+
+```bash
+docker run --rm -p 8000:8000 $(docker build -q .)
+```
+
+Health check:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Run analysis over HTTP using the existing sample portfolio:
+
+```bash
+curl -X POST http://127.0.0.1:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d @examples/sample_portfolio.json
+```
+
+Run analysis with optional parameters:
+
+```bash
+curl -X POST http://127.0.0.1:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tickers": ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA"],
+    "weights": {"AAPL": 0.25, "MSFT": 0.25, "GOOGL": 0.20, "AMZN": 0.15, "TSLA": 0.15},
+    "start_date": "2024-01-01",
+    "end_date": "2025-12-31",
+    "returns_method": "simple",
+    "risk_free_rate": 0.03
+  }'
+```
+
+Interactive API docs are available at:
+- `http://127.0.0.1:8000/docs`
+
 ## Project Structure
 
 ```
 portfolio_risk/
+├── Dockerfile                  # Linux-based API container image
+├── .dockerignore               # Files excluded from Docker build context
+├── api/
+│   ├── __init__.py              # API package
+│   └── app.py                   # FastAPI app and endpoints
+├── agent/
+│   ├── __init__.py              # Agent package exports
+│   ├── config.py                # Defaults and constants
+│   ├── state.py                 # Typed graph state
+│   ├── tools.py                 # Wrappers around existing portfolio_risk modules
+│   ├── prompts.py               # Narrative generation rules
+│   └── portfolio_risk_agent.py  # LangGraph workflow and runner
 ├── portfolio_risk/
 │   ├── __init__.py              # Package initialization
 │   ├── data_loader.py           # Data fetching and returns calculation
@@ -92,11 +184,35 @@ portfolio_risk/
 │   └── correlation.py           # Correlation and diversification analysis
 ├── examples/
 │   └── basic_analysis.py        # Example usage script
+│   ├── run_langgraph_agent.py   # Agent CLI runner
+│   └── sample_portfolio.json    # Existing sample portfolio in JSON form
 ├── tests/                       # Unit tests directory
+│   └── test_langgraph_agent.py  # Agent integration tests
+├── specs/
+│   ├── langgraph_portfolio_risk_agent_spec.md
+│   └── python_coding_standards.md
 ├── requirements.txt             # Project dependencies
 ├── README.md                    # This file
 └── .gitignore                  # Git ignore file
 ```
+
+## LangGraph Agent Architecture
+
+The agent composes your existing financial modules into a graph pipeline:
+
+1. Resolve and validate portfolio input
+2. Load market data and compute returns
+3. Build `Portfolio` object
+4. Compute risk metrics with `RiskMetrics`
+5. Compute correlation/concentration with `CorrelationAnalyzer`
+6. Generate narrative summary and return JSON
+
+Primary implementation:
+- `agent/portfolio_risk_agent.py`
+- `examples/run_langgraph_agent.py`
+
+HTTP wrapper:
+- `api/app.py`
 
 ## Module Documentation
 
@@ -195,6 +311,11 @@ Indicates portfolio concentration. Equal to 1/(sum of squared weights). Higher v
 - **scipy**: Statistical functions
 - **matplotlib**: Data visualization (for future enhancements)
 - **yfinance**: Financial data download
+- **langgraph**: Agent workflow orchestration
+- **langchain / langchain-core**: Graph runtime dependencies
+- **pydantic**: Structured validation/modeling support
+- **fastapi**: HTTP API framework
+- **uvicorn**: ASGI server for local API hosting
 
 ## Future Enhancements
 
