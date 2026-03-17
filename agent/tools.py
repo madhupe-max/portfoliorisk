@@ -21,11 +21,7 @@ def build_portfolio(weights: dict[str, float], returns_data):
 
 def calculate_risk_summary(portfolio: Portfolio, risk_free_rate: float):
     """Calculate risk summary, honoring caller-provided risk-free rate."""
-    returns = portfolio.get_portfolio_returns()
-    summary = RiskMetrics.get_risk_summary(portfolio)
-    summary["Sharpe Ratio"] = RiskMetrics.sharpe_ratio(portfolio, risk_free_rate=risk_free_rate)
-    summary["Sortino Ratio"] = RiskMetrics.sortino_ratio(returns, risk_free_rate=risk_free_rate)
-    return summary
+    return RiskMetrics.get_risk_summary(portfolio, risk_free_rate=risk_free_rate)
 
 
 def calculate_correlation_summary(returns_data, weights: dict[str, float], reference_ticker: str):

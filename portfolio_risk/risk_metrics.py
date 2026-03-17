@@ -132,12 +132,13 @@ class RiskMetrics:
         return covariance / market_variance
     
     @staticmethod
-    def get_risk_summary(portfolio):
+    def get_risk_summary(portfolio, risk_free_rate=0.02):
         """
         Generate comprehensive risk summary for a portfolio.
         
         Args:
             portfolio: Portfolio object.
+            risk_free_rate (float): Annual risk-free rate for Sharpe/Sortino (default: 0.02 = 2%).
         
         Returns:
             dict: Dictionary of key risk metrics.
@@ -147,8 +148,8 @@ class RiskMetrics:
         return {
             'Annual Return': portfolio.get_expected_return(),
             'Annual Volatility': portfolio.get_portfolio_volatility(),
-            'Sharpe Ratio': RiskMetrics.sharpe_ratio(portfolio),
-            'Sortino Ratio': RiskMetrics.sortino_ratio(returns),
+            'Sharpe Ratio': RiskMetrics.sharpe_ratio(portfolio, risk_free_rate=risk_free_rate),
+            'Sortino Ratio': RiskMetrics.sortino_ratio(returns, risk_free_rate=risk_free_rate),
             'VaR (95%)': RiskMetrics.value_at_risk(returns, 0.95),
             'CVaR (95%)': RiskMetrics.conditional_var(returns, 0.95),
             'Maximum Drawdown': RiskMetrics.maximum_drawdown(returns),

@@ -57,3 +57,24 @@ def test_agent_invalid_weights_fails():
     assert result["status"] == "failed"
     assert result["errors"]
     assert any(err["error_code"] == "WEIGHT_SUM_INVALID" for err in result["errors"])
+
+
+def test_agent_market_data_fetch_failure_returns_structured_error(monkeypatch):
+    """Verify computation-node exceptions produce structured AgentError, not UNHANDLED_EXCEPTION."""
+    def _raise_fetch(self, tickers):
+        raise RuntimeError("simulated network failure")
+
+    monkeypatch.setattr("portfolio_risk.data_loader.DataLoader.fetch_data", _raise_fetch)
+
+    payload = {
+        "tickers": ["AAPL", "MSFT"],
+        "weights": {"AAPL": 0.5, "MSFT": 0.5},
+    }
+    result = run_portfolio_risk_agent(payload)
+
+    assert result["status"] == "failed"
+    assert result["errors"], "Expected at least one error entry"
+    error = result["errors"][0]
+    assert error["error_code"] == "MARKET_DATA_FETCH_FAILED"
+    assert "simulated network failure" in error["message"]
+    assert error["details"]["tickers"] == ["AAPL", "MSFT"]

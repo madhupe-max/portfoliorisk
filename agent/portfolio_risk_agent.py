@@ -95,40 +95,95 @@ def validate_input_node(state: PortfolioRiskAgentState) -> PortfolioRiskAgentSta
 
 
 def load_market_data_node(state: PortfolioRiskAgentState) -> PortfolioRiskAgentState:
-    prices, returns = load_market_data(
-        tickers=state["tickers"],
-        start_date=state.get("start_date"),
-        end_date=state.get("end_date"),
-        returns_method=state.get("returns_method", DEFAULT_RETURNS_METHOD),
-    )
+    try:
+        prices, returns = load_market_data(
+            tickers=state["tickers"],
+            start_date=state.get("start_date"),
+            end_date=state.get("end_date"),
+            returns_method=state.get("returns_method", DEFAULT_RETURNS_METHOD),
+        )
+    except Exception as exc:
+        errors = list(state.get("errors", []))
+        errors.append(_agent_error(
+            "MARKET_DATA_FETCH_FAILED",
+            str(exc),
+            recoverable=False,
+            details={"tickers": state["tickers"]},
+        ))
+        return {**state, "errors": errors}
 
     if returns.empty:
-        raise ValueError("No returns data available after processing prices.")
+        errors = list(state.get("errors", []))
+        errors.append(_agent_error(
+            "EMPTY_RETURNS",
+            "No returns data available after processing prices.",
+            recoverable=False,
+            details={"tickers": state["tickers"]},
+        ))
+        return {**state, "errors": errors}
 
     return {**state, "prices": prices, "returns": returns}
 
 
 def build_portfolio_node(state: PortfolioRiskAgentState) -> PortfolioRiskAgentState:
-    portfolio, summary = build_portfolio(state["weights"], state["returns"])
+    try:
+        portfolio, summary = build_portfolio(state["weights"], state["returns"])
+    except Exception as exc:
+        errors = list(state.get("errors", []))
+        errors.append(_agent_error(
+            "PORTFOLIO_BUILD_FAILED",
+            str(exc),
+            recoverable=False,
+            details={"tickers": state["tickers"]},
+        ))
+        return {**state, "errors": errors}
     return {**state, "portfolio_obj": portfolio, "portfolio_summary": summary}
 
 
 def compute_risk_metrics_node(state: PortfolioRiskAgentState) -> PortfolioRiskAgentState:
-    risk_summary = calculate_risk_summary(state["portfolio_obj"], state["risk_free_rate"])
+    try:
+        risk_summary = calculate_risk_summary(state["portfolio_obj"], state["risk_free_rate"])
+    except Exception as exc:
+        errors = list(state.get("errors", []))
+        errors.append(_agent_error(
+            "RISK_METRICS_FAILED",
+            str(exc),
+            recoverable=False,
+        ))
+        return {**state, "errors": errors}
     return {**state, "risk_summary": risk_summary}
 
 
 def compute_correlation_node(state: PortfolioRiskAgentState) -> PortfolioRiskAgentState:
-    correlation_summary = calculate_correlation_summary(
-        returns_data=state["returns"],
-        weights=state["weights"],
-        reference_ticker=state["tickers"][0],
-    )
+    try:
+        correlation_summary = calculate_correlation_summary(
+            returns_data=state["returns"],
+            weights=state["weights"],
+            reference_ticker=state["tickers"][0],
+        )
+    except Exception as exc:
+        errors = list(state.get("errors", []))
+        errors.append(_agent_error(
+            "CORRELATION_FAILED",
+            str(exc),
+            recoverable=False,
+            details={"reference_ticker": state["tickers"][0]},
+        ))
+        return {**state, "errors": errors}
     return {**state, "correlation_summary": correlation_summary}
 
 
 def generate_report_node(state: PortfolioRiskAgentState) -> PortfolioRiskAgentState:
-    narrative = build_risk_narrative(state["risk_summary"], state["correlation_summary"])
+    try:
+        narrative = build_risk_narrative(state["risk_summary"], state["correlation_summary"])
+    except Exception as exc:
+        errors = list(state.get("errors", []))
+        errors.append(_agent_error(
+            "REPORT_GENERATION_FAILED",
+            str(exc),
+            recoverable=False,
+        ))
+        return {**state, "errors": errors}
     return {**state, "narrative": narrative}
 
 
@@ -150,7 +205,7 @@ def error_node(state: PortfolioRiskAgentState) -> PortfolioRiskAgentState:
     return {**state, "status": "failed"}
 
 
-def _should_fail_after_validation(state: PortfolioRiskAgentState) -> str:
+def _route_on_errors(state: PortfolioRiskAgentState) -> str:
     return "error" if state.get("errors") else "ok"
 
 
@@ -171,17 +226,17 @@ def build_graph():
     graph.add_edge("resolve_input", "validate_input")
     graph.add_conditional_edges(
         "validate_input",
-        _should_fail_after_validation,
+        _route_on_errors,
         {
             "ok": "load_market_data",
             "error": "error",
         },
     )
-    graph.add_edge("load_market_data", "build_portfolio")
-    graph.add_edge("build_portfolio", "compute_risk_metrics")
-    graph.add_edge("compute_risk_metrics", "compute_correlation")
-    graph.add_edge("compute_correlation", "generate_report")
-    graph.add_edge("generate_report", "finalize")
+    graph.add_conditional_edges("load_market_data", _route_on_errors, {"ok": "build_portfolio", "error": "error"})
+    graph.add_conditional_edges("build_portfolio", _route_on_errors, {"ok": "compute_risk_metrics", "error": "error"})
+    graph.add_conditional_edges("compute_risk_metrics", _route_on_errors, {"ok": "compute_correlation", "error": "error"})
+    graph.add_conditional_edges("compute_correlation", _route_on_errors, {"ok": "generate_report", "error": "error"})
+    graph.add_conditional_edges("generate_report", _route_on_errors, {"ok": "finalize", "error": "error"})
     graph.add_edge("finalize", END)
     graph.add_edge("error", END)
 
