@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from fastapi.testclient import TestClient
 
 from api.app import app
@@ -44,6 +46,43 @@ def test_analyze_endpoint_runs_agent(monkeypatch):
             "weights": {"AAPL": 1.0},
             "returns_method": "simple",
             "risk_free_rate": 0.02,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == expected
+
+
+def test_analyze_endpoint_loads_portfolio_from_file(tmp_path, monkeypatch):
+    portfolio_file = tmp_path / "portfolio.json"
+    portfolio_file.write_text(
+        json.dumps({"tickers": ["AAPL"], "weights": {"AAPL": 1.0}}),
+        encoding="utf-8",
+    )
+
+    expected = {
+        "status": "completed",
+        "as_of": "2026-03-13",
+        "portfolio": {"tickers": ["AAPL"], "weights": {"AAPL": 1.0}, "summary": {}},
+        "risk": {},
+        "correlation": {},
+        "narrative": "ok",
+        "warnings": [],
+        "errors": [],
+    }
+
+    def _fake_runner(payload):
+        assert payload["tickers"] == ["AAPL"]
+        assert payload["weights"] == {"AAPL": 1.0}
+        return expected
+
+    monkeypatch.setattr("api.app.run_portfolio_risk_agent", _fake_runner)
+
+    response = client.post(
+        "/analyze",
+        json={
+            "portfolio_file": str(portfolio_file),
+            "returns_method": "simple",
         },
     )
 
