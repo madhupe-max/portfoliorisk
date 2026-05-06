@@ -5,15 +5,17 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from agent import run_portfolio_risk_agent
+from portfolio_risk import load_portfolio_file
 
 
 class AnalyzeRequest(BaseModel):
     """Request payload for portfolio risk analysis."""
 
+    portfolio_file: Optional[str] = None
     tickers: Optional[List[str]] = None
     weights: Optional[Dict[str, float]] = None
     start_date: Optional[str] = None
@@ -52,4 +54,15 @@ def health_check() -> Dict[str, str]:
 def analyze_portfolio(request: AnalyzeRequest) -> Dict[str, Any]:
     """Run the portfolio risk agent for the supplied payload."""
     payload = request.model_dump(exclude_none=True)
+
+    portfolio_file = payload.pop("portfolio_file", None)
+    if portfolio_file:
+        try:
+            file_payload = load_portfolio_file(portfolio_file)
+        except Exception as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+        # Explicit request fields override values loaded from file.
+        payload = {**file_payload, **payload}
+
     return run_portfolio_risk_agent(payload)

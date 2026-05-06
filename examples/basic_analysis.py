@@ -5,6 +5,8 @@ This script demonstrates how to use the portfolio_risk package to analyze
 risk metrics for a sample portfolio.
 """
 
+import argparse
+
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,13 +16,28 @@ from portfolio_risk import (
     Portfolio,
     RiskMetrics,
     CorrelationAnalyzer,
+    load_portfolio_file,
 )
 
 
-def main():
-    """Run basic portfolio analysis."""
-    
-    # Define portfolio
+def parse_args() -> argparse.Namespace:
+    """Parse command-line options."""
+    parser = argparse.ArgumentParser(description="Run basic portfolio risk analysis")
+    parser.add_argument(
+        "--portfolio-file",
+        type=str,
+        default=None,
+        help="Path to portfolio file (.json or .csv)",
+    )
+    return parser.parse_args()
+
+
+def get_portfolio_definition(portfolio_file: str | None):
+    """Resolve portfolio tickers and weights from CLI input or defaults."""
+    if portfolio_file:
+        payload = load_portfolio_file(portfolio_file)
+        return payload["tickers"], payload["weights"]
+
     tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']
     weights = {
         'AAPL': 0.25,
@@ -29,6 +46,14 @@ def main():
         'AMZN': 0.15,
         'TSLA': 0.15,
     }
+    return tickers, weights
+
+
+def main():
+    """Run basic portfolio analysis."""
+
+    args = parse_args()
+    tickers, weights = get_portfolio_definition(args.portfolio_file)
     
     # Load historical data
     loader = DataLoader()

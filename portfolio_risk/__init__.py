@@ -8,6 +8,7 @@ from .portfolio import Portfolio
 from .risk_metrics import RiskMetrics
 from .data_loader import DataLoader
 from .correlation import CorrelationAnalyzer
+from .portfolio_file import load_portfolio_file
 
 __version__ = "0.1.0"
 __author__ = "Portfolio Risk Analysis Team"
@@ -17,4 +18,5 @@ __all__ = [
     "RiskMetrics",
     "DataLoader",
     "CorrelationAnalyzer",
+    "load_portfolio_file",
 ]
