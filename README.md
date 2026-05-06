@@ -90,6 +90,23 @@ Run the agent with the existing sample portfolio (AAPL, MSFT, GOOGL, AMZN, TSLA)
 python examples/run_langgraph_agent.py --portfolio-file examples/sample_portfolio.json
 ```
 
+Run the agent with a CSV flat file:
+
+```bash
+python examples/run_langgraph_agent.py --portfolio-file examples/my_portfolio.csv
+```
+
+Example CSV format:
+
+```csv
+ticker,weight
+AAPL,0.30
+MSFT,0.25
+GOOGL,0.20
+AMZN,0.15
+TSLA,0.10
+```
+
 Run with default built-in portfolio (same existing sample portfolio):
 
 ```bash
@@ -142,6 +159,17 @@ curl -X POST http://127.0.0.1:8000/analyze \
   -d @examples/sample_portfolio.json
 ```
 
+Run analysis by passing a flat-file path in the request (JSON or CSV):
+
+```bash
+curl -X POST http://127.0.0.1:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "portfolio_file": "examples/sample_portfolio.json",
+    "returns_method": "simple"
+  }'
+```
+
 Run analysis with optional parameters:
 
 ```bash
@@ -183,11 +211,14 @@ portfolio_risk/
 │   ├── risk_metrics.py          # Risk measurement functions
 │   └── correlation.py           # Correlation and diversification analysis
 ├── examples/
-│   └── basic_analysis.py        # Example usage script
+│   ├── basic_analysis.py        # Example usage script
 │   ├── run_langgraph_agent.py   # Agent CLI runner
-│   └── sample_portfolio.json    # Existing sample portfolio in JSON form
+│   ├── sample_portfolio.json    # Existing sample portfolio in JSON form
+│   └── sample_portfolio.csv     # Existing sample portfolio in CSV form
 ├── tests/                       # Unit tests directory
-│   └── test_langgraph_agent.py  # Agent integration tests
+│   ├── test_api.py              # API tests
+│   ├── test_langgraph_agent.py  # Agent integration tests
+│   └── test_portfolio_file.py   # Portfolio file loading tests
 ├── specs/
 │   ├── langgraph_portfolio_risk_agent_spec.md
 │   └── python_coding_standards.md
@@ -252,6 +283,12 @@ Execute the basic analysis example:
 
 ```bash
 python examples/basic_analysis.py
+```
+
+Execute the basic analysis example with your own flat file:
+
+```bash
+python examples/basic_analysis.py --portfolio-file examples/my_portfolio.csv
 ```
 
 This will:
