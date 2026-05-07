@@ -1,0 +1,92 @@
+{
+  "status": "completed",
+  "as_of": "2026-05-07",
+  "portfolio": {
+    "tickers": [
+      "DVSMX",
+      "IAUM",
+      "ICE",
+      "INSG",
+      "IREN",
+      "LCID",
+      "MSFT",
+      "O",
+      "VOO",
+      "VRT",
+      "VTI"
+    ],
+    "weights": {
+      "DVSMX": 0.0523828006,
+      "IAUM": 0.098590097,
+      "ICE": 0.0030990729,
+      "INSG": 0.0677257646,
+      "IREN": 0.2091719853,
+      "LCID": 0.0033390251,
+      "MSFT": 0.249233782,
+      "O": 0.0279018069,
+      "VOO": 0.0719860696,
+      "VRT": 0.0682375311,
+      "VTI": 0.1483320648
+    },
+    "summary": {
+      "Expected Annual Return": 0.5860884813626328,
+      "Annual Volatility": 0.3264376564102359,
+      "Variance": 0.10656154352260723,
+      "Number of Assets": 11,
+      "Tickers": [
+        "DVSMX",
+        "IAUM",
+        "ICE",
+        "INSG",
+        "IREN",
+        "LCID",
+        "MSFT",
+        "O",
+        "VOO",
+        "VRT",
+        "VTI"
+      ],
+      "Weights": {
+        "DVSMX": 0.0523828006,
+        "IAUM": 0.098590097,
+        "ICE": 0.0030990729,
+        "INSG": 0.0677257646,
+        "IREN": 0.2091719853,
+        "LCID": 0.0033390251,
+        "MSFT": 0.249233782,
+        "O": 0.0279018069,
+        "VOO": 0.0719860696,
+        "VRT": 0.0682375311,
+        "VTI": 0.1483320648
+      }
+    }
+  },
+  "risk": {
+    "Annual Return": 0.5860884813626328,
+    "Annual Volatility": 0.3264376564102359,
+    "Sharpe Ratio": 1.7341396442671013,
+    "Sortino Ratio": 2.696327966298243,
+    "VaR (95%)": 0.03178994731986275,
+    "CVaR (95%)": 0.04147410492249683,
+    "Maximum Drawdown": -0.31821260893434056,
+    "Calmar Ratio": 1.8418141359180562
+  },
+  "correlation": {
+    "average_correlation": 0.27593443573183857,
+    "diversifiers": {
+      "O": 0.13898166635551,
+      "IAUM": 0.20890449713024242,
+      "ICE": 0.3055156758379086
+    },
+    "concentration": {
+      "Largest Weight": 0.249233782,
+      "Top 3 Concentration": 0.6067378321,
+      "Herfindahl Index": 0.15556116222484404,
+      "Effective Number of Bets": 6.42833973273243,
+      "Average Correlation": 0.27593443573183857
+    }
+  },
+  "narrative": "Risk-adjusted return is healthy for the observed period. Maximum drawdown indicates elevated downside risk. Top-3 concentration is within a moderate range. Correlation structure provides reasonable diversification support.",
+  "warnings": [],
+  "errors": []
+}
